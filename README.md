@@ -1,3 +1,3 @@
-# WebTemplate
+# NodeGraph
 
-A web template.
+Create Nodes with inputs/outputs and functions.
