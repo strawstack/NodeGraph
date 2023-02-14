@@ -11,3 +11,7 @@ body {
     font-size: 1.2rem;
     background: lightgrey;
 }
+
+.content {
+    min-height: 100%;
+}
