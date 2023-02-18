@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
 
+:root {
+    --body-background: lightgrey;
+    --node-body: #777777;
+    --node-text: white;
+    --connector-fill: #74D18E;
+    --connector-empty: lightgrey;
+    --connector-edge: #555555;
+}
+
 html, body {
     margin: 0px;
     padding: 0px;
@@ -9,9 +18,20 @@ html, body {
 body {
     font-family: 'Nunito', sans-serif;
     font-size: 1.2rem;
-    background: lightgrey;
+    background: var(--body-background);
 }
 
 .content {
     min-height: 100%;
+}
+
+.node-body {
+    fill: var(--node-body);
+    rx: 8;
+}
+
+.in-connect, .out-connect {
+    stroke-width: 5px; 
+    stroke: var(--connector-edge);
+    fill: var(--connector-empty);
 }
