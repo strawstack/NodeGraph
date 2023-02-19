@@ -3,6 +3,7 @@
 :root {
     --body-background: lightgrey;
     --node-body: #777777;
+    --node-body-hover: #666666;
     --node-text: white;
     --connector-fill: #74D18E;
     --connector-empty: lightgrey;
@@ -26,12 +27,19 @@ body {
 }
 
 .node-body {
+    stroke: var(--connector-edge);
+    stroke-width: 5px;
     fill: var(--node-body);
     rx: 8;
 }
 
+    .node-body:hover {
+        cursor: pointer;
+        fill: var(--node-body-hover);
+    }
+
 .in-connect, .out-connect {
-    stroke-width: 5px; 
     stroke: var(--connector-edge);
+    stroke-width: 5px;
     fill: var(--connector-empty);
 }
