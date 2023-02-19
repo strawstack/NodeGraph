@@ -79,6 +79,21 @@
                 width: opts.width,
                 height: opts.height
             });
+            nb.addEventListener("mousedown", () => {
+                const m = state.mouse;
+                const uid = opts.uid;
+                state.selected_node = uid;
+                state.selected_offset = sub(
+                    {
+                        x: state.nodes[uid].opts.x, 
+                        y: state.nodes[uid].opts.y}, 
+                    m
+                );
+            });
+            nb.addEventListener("mouseup", () => {
+                state.selected_node = null;
+                state.selected_offset = null;
+            });
             g.appendChild(nb);
 
             const in_spacing  = state.const.connect_spacing[opts.in - 1];
@@ -125,25 +140,38 @@
                 const {g, nb, c_in, c_out} = state.helper.createNode(false, ns.opts);
                 ns.ref = g;
                 for (let conn of c_in) {
-                    let cid = state.uid();
+                    let cid = state.helper.getUid();
                     ns.in[cid] = {ref: conn};
                 }
                 for (let conn of c_out) {
-                    let cid = state.uid();
+                    let cid = state.helper.getUid();
                     ns.out[cid] = {ref: conn};
                 }
-                nb.addEventListener("mousedown", () => {
-                    ns.mousedown(state, k);
-                });
-                nb.addEventListener("mouseup", () => {
-                    ns.mouseup(state);
-                });
                 state.svg.appendChild(g);
             }
 
             // Sync node positon
             translate(ns.ref, {x: ns.opts.x, y: ns.opts.y});
         }
+    }
+
+    function nodeType(state, uid) {
+        if (uid in state.nodes) {
+            return "NODE";
+        
+        } else {
+            for (let n in state.nodes) {
+                const c_in = state.nodes[n].in;
+                const c_out = state.nodes[n].out;
+                if (uid in c_in) {
+                    return "IN";
+
+                } else if (uid in c_out) {
+                    return "OUT";
+                }
+            }
+        }
+        return null;
     }
 
     function main() {
@@ -171,7 +199,6 @@
             mouse: null,
             selected_node: null,
             selected_offset: {x: null, y: null},
-            uid: uid,
             const: {
                 node_width: 250,
                 node_height: 250,
@@ -187,14 +214,15 @@
 
         const create     = createFactory(state, svg);
         const createNode = createNodeFactory(state, create);
-        state.helper = {create, createNode};
+        state.helper = {create, createNode, getUid: uid};
 
         press("c", () => {
             const m = state.mouse;
             if (m !== null) {
-                const nid = state.uid();
+                const nid = state.helper.getUid();
                 state.nodes[nid] = {
                     opts: {
+                        uid: nid,
                         x: m.x,
                         y: m.y,
                         in: 1,
@@ -202,17 +230,7 @@
                     },
                     in: {},
                     out: {},
-                    ref: null,
-                    mousedown: (state, nid) => {
-                        const m = state.mouse;
-                        const opts = state.nodes[nid].opts;
-                        state.selected_node = nid;
-                        state.selected_offset = sub({x: opts.x, y: opts.y}, m);
-                    },
-                    mouseup: (state) => {
-                        state.selected_node = null;
-                        state.selected_offset = null;
-                    }
+                    ref: null
                 };
                 render(state);
             }
@@ -222,10 +240,20 @@
             state.mouse = getMouse(e);
 
             if (state.selected_node !== null) {
-                const opts = state.nodes[state.selected_node].opts;
-                const newPos = add(state.mouse, state.selected_offset);
-                opts.x = newPos.x;
-                opts.y = newPos.y;
+
+                switch(nodeType(state, state.selected_node)) {
+                    case "NODE":
+                        const opts = state.nodes[state.selected_node].opts;
+                        const newPos = add(state.mouse, state.selected_offset);
+                        opts.x = newPos.x;
+                        opts.y = newPos.y;                        
+                        break;
+                    case "IN":
+                    case "OUT":
+                        console.log("here");
+                        break;
+                }
+                
             }
 
             render(state);
