@@ -43,3 +43,10 @@ body {
     stroke-width: 5px;
     fill: var(--connector-empty);
 }
+
+.wire {
+    stroke: var(--connector-fill);
+    stroke-width: 8px;
+    pointer-events: none;
+    stroke-linecap: round;
+}
