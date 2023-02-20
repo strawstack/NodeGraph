@@ -223,6 +223,16 @@
         return m;
     }
 
+    function parentNode(state, uid) {
+        for (let k in state.nodes) {
+            const n = state.nodes[k];
+            if (uid in n.in || uid in n.out) {
+                return k;
+            }
+        }
+        return null;
+    }
+
     function createWireFactory(state, create) {
         return (add, wireState) => {
 
@@ -249,6 +259,28 @@
 
             // Create
             if (!("ref" in ns)) {
+
+                const m = state.mouse;
+                if (m !== null) {
+                    ns.opts.x = m.x;
+                    ns.opts.y = m.y;
+                }
+
+                if (ns.type in state.typeLookup) {
+                    ns.opts.in = state.typeLookup[ns.type].in;
+                    ns.opts.out = state.typeLookup[ns.type].out;
+                }
+
+                ns.audioNode = state.typeLookup[ns.type].create(state);
+                
+                // Always start nodes of type 'OscillatorNode'
+                if (ns.type === "OscillatorNode") {
+                    if (!("started" in ns) ) {
+                        ns.started = true;
+                        ns.audioNode.start();
+                    }
+                }
+                
                 const g = state.helper.createNode(false, ns);
                 state.svg.appendChild(g);
             }
@@ -273,6 +305,20 @@
             ws.ref.setAttribute("y1", fromOutPos.y);
             ws.ref.setAttribute("x2", toInPos.x);
             ws.ref.setAttribute("y2", toInPos.y);
+
+            // Connect functions if wire is complete
+            if (ws.from_out !== null && ws.to_in !== null) {
+                const pFrom = parentNode(state, ws.from_out);
+                const pTo = parentNode(state, ws.to_in);
+                const fromType = state.nodes[pFrom].type;
+                const toType = state.nodes[pTo].type;
+                const from_node = state.nodes[pFrom].audioNode;
+                const to_node   = state.nodes[pTo].audioNode;
+
+                from_node.connect(to_node);
+            }
+
+            state.audioContext.resume();
         }
     }
 
@@ -318,6 +364,7 @@
             } */
             nodes: {},
             mouse: null,
+            audioContext: new AudioContext(),
 
             selected_node: null,
             selected_offset: {x: null, y: null},
@@ -331,6 +378,29 @@
                 }
             } */
             wires: {},
+
+            typeLookup: {
+                OscillatorNode: {
+                    in: 0, 
+                    out: 1,
+                    create: (state) => new OscillatorNode(state.audioContext, {
+                        type: "sine",
+                        frequency: 256
+                    })
+                },
+                Destination: {
+                    in: 1, 
+                    out: 0,
+                    create: (state) => state.audioContext.destination
+                },
+                GainNode: {
+                    in: 1,
+                    out: 1,
+                    create: (state) => new GainNode(state.audioContext, {
+                        gain: 0.1,
+                    })
+                }
+            },
 
             const: {
                 node_width: 250,
@@ -351,21 +421,34 @@
         const createWire = createWireFactory(state, create);
         state.helper = {createWire, createNode, getUid: uid};
 
-        press("c", () => {
-            const m = state.mouse;
-            if (m !== null) {
-                const nid = state.helper.getUid();
-                state.nodes[nid] = {
-                    uid: nid,
-                    opts: {
-                        x: m.x,
-                        y: m.y,
-                        in: 1,
-                        out: 2
-                    }
-                };
-                render(state);
-            }
+        press("o", () => {
+            const nid = state.helper.getUid();
+            state.nodes[nid] = {
+                uid: nid,
+                type: "OscillatorNode",
+                opts: {}
+            };
+            render(state);
+        });      
+        
+        press("g", () => {
+            const nid = state.helper.getUid();
+            state.nodes[nid] = {
+                uid: nid,
+                type: "GainNode",
+                opts: {}
+            };
+            render(state);
+        });  
+
+        press("d", () => {
+            const nid = state.helper.getUid();
+            state.nodes[nid] = {
+                uid: nid,
+                type: "Destination",
+                opts: {}
+            };
+            render(state);
         });
 
         window.addEventListener("mousemove", (e) => {
@@ -386,6 +469,23 @@
         // init
         render(state);
     }
+
+    /* Testing
+    press("f", () => {
+        const ac = new AudioContext();
+        const occ = new OscillatorNode(ac, {
+            type: "sine",
+            frequency: 256
+        });
+    
+        occ.connect(ac.destination);
+        console.log("here");
+
+        press("g", () => {
+            occ.start();
+        });
+    }); */
+
 
     main();
 })();
